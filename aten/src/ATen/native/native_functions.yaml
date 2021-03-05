@@ -946,6 +946,7 @@
   dispatch:
     CPU, CUDA: ceil_out
 
+# Alias for torch.linalg.multi_dot with exception that it accepts a single input Tensor
 - func: chain_matmul(Tensor[] matrices) -> Tensor
   variants: function
 
@@ -9277,6 +9278,12 @@
   variants: function
   dispatch:
     Math: linalg_matrix_rank_out
+
+- func: linalg_multi_dot(Tensor[] tensors) -> Tensor
+  python_module: linalg
+
+- func: linalg_multi_dot.out(Tensor[] tensors, *, Tensor(a!) out) -> Tensor(a!)
+  python_module: linalg
 
 ## Functions that are only for testing
 # It is undocumented and should not be used outside of tests.

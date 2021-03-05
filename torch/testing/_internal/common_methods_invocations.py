@@ -386,6 +386,25 @@ def sample_inputs_tensor_split(op_info, device, dtype, requires_grad):
                         args=(torch.tensor([1, 2, 3]),),
                         kwargs=dict(dim=1)),)
 
+def sample_inputs_linalg_multi_dot(op_info, device, dtype, requires_grad):
+    test_cases = [
+        [(S,), (S,)],
+        [(1, S), (S, 1)],
+        [(S, 0), (0, S)],
+        [(0, S), (S, 2)],
+        [(2, S), (S, 2), (2, S)],
+    ]
+
+    result = []
+    for test_case in test_cases:
+        tensors = []
+        for size in test_case:
+            t = make_tensor(size, device, dtype, requires_grad=requires_grad)
+            tensors.append(t)
+        result.append(SampleInput(tensors))
+
+    return result
+
 def sample_inputs_linalg_norm(op_info, device, dtype, requires_grad):
     test_sizes = [
         (S,),
@@ -1944,6 +1963,20 @@ op_db: List[OpInfo] = [
            decorators=[_wrap_maybe_warns("floor_divide is deprecated, and will be removed")],
            supports_autograd=False,
            ),
+    OpInfo('linalg.multi_dot',
+           aten_name='linalg_multi_dot',
+           dtypes=floating_and_complex_types_and(torch.half),
+           dtypesIfCPU=all_types_and_complex_and(torch.half, torch.bfloat16),
+           dtypesIfCUDA=floating_and_complex_types_and(torch.half, *[torch.bfloat16] if CUDA11OrLater else []),
+           test_inplace_grad=False,
+           # Batched grad checks fail for empty input tensors (see https://github.com/pytorch/pytorch/issues/53407)
+           check_batched_grad=False,
+           check_batched_gradgrad=False,
+           sample_inputs_func=sample_inputs_linalg_multi_dot,
+           skips=(
+               # This test is not working properly for TensorList inputs
+               SkipInfo('TestCommon', 'test_variant_consistency_jit'),
+           )),
     OpInfo('linalg.norm',
            op=torch.linalg.norm,
            dtypes=floating_and_complex_types_and(torch.float16, torch.bfloat16),
